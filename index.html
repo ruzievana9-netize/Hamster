@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐹 Hamster Klikker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .coins {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .energy-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .energy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 100%;
+        }
+
+        .energy-text {
+            font-size: 14px;
+        }
+
+        .hamster-container {
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .hamster {
+            font-size: 120px;
+            transition: transform 0.1s ease;
+            display: inline-block;
+        }
+
+        .hamster:active {
+            transform: scale(0.9);
+        }
+
+        .click-effect {
+            position: fixed;
+            pointer-events: none;
+            color: #ffd700;
+            font-weight: bold;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+        }
+
+        .upgrades {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .upgrade-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .upgrade-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .upgrade-item:active {
+            transform: translateY(0);
+        }
+
+        .upgrade-item h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-item p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-cost {
+            color: #f093fb;
+            font-weight: bold;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🐹</span>
+                Hamster Klikker
+            </h1>
+        </div>
+
+        <div class="stats">
+            <div class="coins" id="coins">0</div>
+            <div>Tangalar</div>
+            <div class="energy-bar">
+                <div class="energy-fill" id="energy-fill" style="width: 100%"></div>
+            </div>
+            <div class="energy-text" id="energy-text">100/100 Energiya</div>
+        </div>
+
+        <div class="hamster-container" id="hamster">
+            <div class="hamster" id="hamster-emoji">🐹</div>
+            <div>Bosing!</div>
+        </div>
+
+        <div class="upgrades">
+            <div class="upgrade-item" id="upgrade-click" onclick="buyUpgrade('click')">
+                <h3>🖱️ Kuchli bosish</h3>
+                <p>+1 tanga/bosish</p>
+                <p class="upgrade-cost" id="click-cost">50 tanga</p>
+                <div>Daraja: <span id="click-level">1</span></div>
+            </div>
+            <div class="upgrade-item" id="upgrade-energy" onclick="buyUpgrade('energy')">
+                <h3>⚡ Energiya</h3>
+                <p>+20 maksimum</p>
+                <p class="upgrade-cost" id="energy-cost">30 tanga</p>
+                <div>Daraja: <span id="energy-level">1</span></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            ⚡ Bosish uchun hamsterni bosing
+        </div>
+    </div>
+
+    <script>
+        // O'yin ma'lumotlari
+        let coins = 100; // Boshlang'ich tangalar
+        let clickPower = 1; // Har bosishda olinadigan tanga
+        let maxEnergy = 100;
+        let currentEnergy = maxEnergy;
+        let energyRegenRate = 1; // 1 soniyada qayta tiklanadigan energiya
+
+        // Upgrade narxlari
+        let clickUpgradeCost = 50;
+        let energyUpgradeCost = 30;
+        let clickLevel = 1;
+        let energyLevel = 1;
+
+        // Elementlar
+        const coinsElement = document.getElementById('coins');
+        const energyFill = document.getElementById('energy-fill');
+        const energyText = document.getElementById('energy-text');
+        const hamster = document.getElementById('hamster');
+        const clickLevelSpan = document.getElementById('click-level');
+        const energyLevelSpan = document.getElementById('energy-level');
+        const clickCostSpan = document.getElementById('click-cost');
+        const energyCostSpan = document.getElementById('energy-cost');
+
+        // Tangalarni yangilash
+        function updateDisplay() {
+            coinsElement.textContent = coins;
+            const energyPercent = (currentEnergy / maxEnergy) * 100;
+            energyFill.style.width = energyPercent + '%';
+            energyText.textContent = `${currentEnergy}/${maxEnergy} Energiya`;
+            
+            // Upgrade narxlarini yangilash
+            clickCostSpan.textContent = clickUpgradeCost + ' tanga';
+            energyCostSpan.textContent = energyUpgradeCost + ' tanga';
+            
+            clickLevelSpan.textContent = clickLevel;
+            energyLevelSpan.textContent = energyLevel;
+
+            // Upgrade tugmalarini aktiv/inaktiv qilish
+            const clickUpgrade = document.getElementById('upgrade-click');
+            const energyUpgrade = document.getElementById('upgrade-energy');
+
+            if (coins < clickUpgradeCost) {
+                clickUpgrade.classList.add('disabled');
+            } else {
+                clickUpgrade.classList.remove('disabled');
+            }
+
+            if (coins < energyUpgradeCost) {
+                energyUpgrade.classList.add('disabled');
+            } else {
+                energyUpgrade.classList.remove('disabled');
+            }
+        }
+
+        // Klik effekti yaratish
+        function createClickEffect(x, y, value) {
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.textContent = `+${value}`;
+            effect.style.left = x + 'px';
+            effect.style.top = y + 'px';
+            document.body.appendChild(effect);
+
+            setTimeout(() => {
+                effect.remove();
+            }, 1000);
+        }
+
+        // Hamsterga bosish
+        hamster.addEventListener('click', (e) => {
+            if (currentEnergy >= clickPower) {
+                // Tanga qo'shish
+                coins += clickPower;
+                currentEnergy -= clickPower;
+
+                // Klik effekti
+                const rect = e.target.getBoundingClientRect();
+                const x = e.clientX;
+                const y = e.clientY;
+                createClickEffect(x, y, clickPower);
+
+                // Hamster animatsiyasi
+                const hamsterEmoji = document.getElementById('hamster-emoji');
+                hamsterEmoji.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    hamsterEmoji.style.transform = 'scale(1)';
+                }, 100);
+
+                updateDisplay();
+            } else {
+                // Energiya yetarli emas
+                alert('Energiya yetarli emas! Bir oz kuting...');
+            }
+        });
+
+        // Upgrade sotib olish
+        function buyUpgrade(type) {
+            if (type === 'click' && coins >= clickUpgradeCost) {
+                coins -= clickUpgradeCost;
+                clickPower++;
+                clickLevel++;
+                clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
+                updateDisplay();
+            } else if (type === 'energy' && coins >= energyUpgradeCost) {
+                coins -= energyUpgradeCost;
+                maxEnergy += 20;
+                currentEnergy = maxEnergy; // Energiyani to'ldirish
+                energyLevel++;
+                energyUpgradeCost = Math.floor(energyUpgradeCost * 1.5);
+                updateDisplay();
+            }
+        }
+
+        // Energiyani qayta tiklash
+        setInterval(() => {
+            if (currentEnergy < maxEnergy) {
+                currentEnergy = Math.min(currentEnergy + energyRegenRate, maxEnergy);
+                updateDisplay();
+            }
+        }, 1000);
+
+        // Saqlash funksiyasi (localStorage)
+        function saveGame() {
+            const gameData = {
+                coins: coins,
+                clickPower: clickPower,
+                maxEnergy: maxEnergy,
+                currentEnergy: currentEnergy,
+                clickLevel: clickLevel,
+                energyLevel: energyLevel,
+                clickUpgradeCost: clickUpgradeCost,
+                energyUpgradeCost: energyUpgradeCost
+            };
+            localStorage.setItem('hamsterGame', JSON.stringify(gameData));
+        }
+
+        // Yuklash funksiyasi
+        function loadGame() {
+            const savedData = localStorage.getItem('hamsterGame');
+            if (savedData) {
+                const gameData = JSON.parse(savedData);
+                coins = gameData.coins;
+                clickPower = gameData.clickPower;
+                maxEnergy = gameData.maxEnergy;
+                currentEnergy = gameData.currentEnergy;
+                clickLevel = gameData.clickLevel;
+                energyLevel = gameData.energyLevel;
+                clickUpgradeCost = gameData.clickUpgradeCost;
+                energyUpgradeCost = gameData.energyUpgradeCost;
+                updateDisplay();
+            }
+        }
+
+        // Har 5 soniyada avtomatik saqlash
+        setInterval(saveGame, 5000);
+
+        // Sahifa yuklanganda o'yinni yuklash
+        window.onload = function() {
+            loadGame();
+            updateDisplay();
+        };
+
+        // Sahifa yopilganda saqlash
+        window.onbeforeunload = function() {
+            saveGame();
+        };
+    </script>
+</body>
+</html>
