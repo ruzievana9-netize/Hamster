@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐹 Hamster Klikker</title>
+    <title>🐹 Hamster Klikker - Rangli</title>
     <style>
         * {
             margin: 0;
@@ -87,12 +87,79 @@
 
         .hamster {
             font-size: 120px;
-            transition: transform 0.1s ease;
+            transition: transform 0.1s ease, filter 0.5s ease, text-shadow 0.5s ease;
             display: inline-block;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.3));
         }
 
         .hamster:active {
             transform: scale(0.9);
+        }
+
+        /* Hamster ranglari - har 100 tanga uchun */
+        .hamster.level-1 { /* 0-99 tanga */
+            filter: drop-shadow(0 0 10px #FFD700);
+        }
+        .hamster.level-2 { /* 100-199 tanga */
+            filter: drop-shadow(0 0 15px #FF69B4) hue-rotate(30deg);
+        }
+        .hamster.level-3 { /* 200-299 tanga */
+            filter: drop-shadow(0 0 20px #4169E1) hue-rotate(60deg) brightness(1.2);
+        }
+        .hamster.level-4 { /* 300-399 tanga */
+            filter: drop-shadow(0 0 25px #32CD32) hue-rotate(90deg) brightness(1.3);
+        }
+        .hamster.level-5 { /* 400-499 tanga */
+            filter: drop-shadow(0 0 30px #FF4500) hue-rotate(120deg) brightness(1.4);
+        }
+        .hamster.level-6 { /* 500-599 tanga */
+            filter: drop-shadow(0 0 35px #9400D3) hue-rotate(150deg) brightness(1.5);
+        }
+        .hamster.level-7 { /* 600-699 tanga */
+            filter: drop-shadow(0 0 40px #00FFFF) hue-rotate(180deg) brightness(1.6);
+        }
+        .hamster.level-8 { /* 700-799 tanga */
+            filter: drop-shadow(0 0 45px #FF1493) hue-rotate(210deg) brightness(1.7);
+        }
+        .hamster.level-9 { /* 800-899 tanga */
+            filter: drop-shadow(0 0 50px #FFD700) hue-rotate(240deg) brightness(1.8);
+        }
+        .hamster.level-10 { /* 900-999 tanga */
+            filter: drop-shadow(0 0 55px #FF0000) hue-rotate(270deg) brightness(1.9);
+        }
+        .hamster.level-max { /* 1000+ tanga - Rainbow effekt */
+            animation: rainbow 3s infinite;
+        }
+
+        @keyframes rainbow {
+            0% { filter: drop-shadow(0 0 30px #FF0000) hue-rotate(0deg); }
+            20% { filter: drop-shadow(0 0 30px #FFA500) hue-rotate(30deg); }
+            40% { filter: drop-shadow(0 0 30px #FFFF00) hue-rotate(60deg); }
+            60% { filter: drop-shadow(0 0 30px #008000) hue-rotate(90deg); }
+            80% { filter: drop-shadow(0 0 30px #0000FF) hue-rotate(120deg); }
+            100% { filter: drop-shadow(0 0 30px #FF0000) hue-rotate(360deg); }
+        }
+
+        .level-indicator {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FFD700, #FF69B4);
+            transition: width 0.3s ease;
         }
 
         .click-effect {
@@ -180,6 +247,10 @@
         <div class="stats">
             <div class="coins" id="coins">0</div>
             <div>Tangalar</div>
+            <div class="level-indicator" id="level-indicator">Daraja 1 (0-99 tanga)</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
             <div class="energy-bar">
                 <div class="energy-fill" id="energy-fill" style="width: 100%"></div>
             </div>
@@ -187,7 +258,7 @@
         </div>
 
         <div class="hamster-container" id="hamster">
-            <div class="hamster" id="hamster-emoji">🐹</div>
+            <div class="hamster level-1" id="hamster-emoji">🐹</div>
             <div>Bosing!</div>
         </div>
 
@@ -207,7 +278,7 @@
         </div>
 
         <div class="footer">
-            ⚡ Bosish uchun hamsterni bosing
+            ⚡ Bosish uchun hamsterni bosing | Har 100 tangada rang o'zgaradi
         </div>
     </div>
 
@@ -218,6 +289,7 @@
         let maxEnergy = 100;
         let currentEnergy = maxEnergy;
         let energyRegenRate = 1; // 1 soniyada qayta tiklanadigan energiya
+        let lastLevel = 1; // Oxirgi darajani saqlash
 
         // Upgrade narxlari
         let clickUpgradeCost = 50;
@@ -230,10 +302,88 @@
         const energyFill = document.getElementById('energy-fill');
         const energyText = document.getElementById('energy-text');
         const hamster = document.getElementById('hamster');
+        const hamsterEmoji = document.getElementById('hamster-emoji');
+        const levelIndicator = document.getElementById('level-indicator');
+        const progressFill = document.getElementById('progress-fill');
         const clickLevelSpan = document.getElementById('click-level');
         const energyLevelSpan = document.getElementById('energy-level');
         const clickCostSpan = document.getElementById('click-cost');
         const energyCostSpan = document.getElementById('energy-cost');
+
+        // Hamster rangini yangilash
+        function updateHamsterColor() {
+            // Hamsterning barcha level klasslarini olib tashlash
+            hamsterEmoji.className = 'hamster';
+            
+            // Qaysi level ekanligini aniqlash
+            let level = Math.floor(coins / 100) + 1;
+            if (coins >= 1000) {
+                hamsterEmoji.classList.add('level-max');
+                levelIndicator.textContent = `✨ Maksimal daraja! (${coins} tanga) ✨`;
+                progressFill.style.width = '100%';
+            } else {
+                // Level klassini qo'shish
+                if (level <= 10) {
+                    hamsterEmoji.classList.add(`level-${level}`);
+                } else {
+                    hamsterEmoji.classList.add('level-max');
+                }
+                
+                // Level indikatorini yangilash
+                const nextLevelCoins = Math.ceil(coins / 100) * 100;
+                const prevLevelCoins = Math.floor(coins / 100) * 100;
+                const progress = ((coins - prevLevelCoins) / 100) * 100;
+                progressFill.style.width = progress + '%';
+                
+                if (level <= 10) {
+                    levelIndicator.textContent = `Daraja ${level} (${prevLevelCoins}-${nextLevelCoins-1} tanga)`;
+                } else {
+                    levelIndicator.textContent = `✨ Maksimal daraja! (${coins} tanga) ✨`;
+                }
+            }
+
+            // Yangi darajaga yetganda animatsiya
+            if (level !== lastLevel && coins > 0) {
+                levelUpEffect(level);
+                lastLevel = level;
+            }
+        }
+
+        // Level oshganda effekt
+        function levelUpEffect(newLevel) {
+            // Hamster emojini vaqtincha o'zgartirish
+            const originalEmoji = hamsterEmoji.textContent;
+            hamsterEmoji.textContent = '🎉';
+            hamsterEmoji.style.transform = 'scale(1.5)';
+            
+            setTimeout(() => {
+                hamsterEmoji.textContent = originalEmoji;
+                hamsterEmoji.style.transform = 'scale(1)';
+            }, 500);
+
+            // Yangi daraja xabari
+            const levelUpMessage = document.createElement('div');
+            levelUpMessage.style.position = 'fixed';
+            levelUpMessage.style.top = '50%';
+            levelUpMessage.style.left = '50%';
+            levelUpMessage.style.transform = 'translate(-50%, -50%)';
+            levelUpMessage.style.background = 'linear-gradient(135deg, #FFD700, #FF69B4)';
+            levelUpMessage.style.color = 'white';
+            levelUpMessage.style.padding = '20px';
+            levelUpMessage.style.borderRadius = '10px';
+            levelUpMessage.style.fontSize = '24px';
+            levelUpMessage.style.fontWeight = 'bold';
+            levelUpMessage.style.zIndex = '2000';
+            levelUpMessage.style.boxShadow = '0 0 30px rgba(0,0,0,0.3)';
+            levelUpMessage.style.animation = 'floatUp 2s ease-out forwards';
+            levelUpMessage.textContent = `🏆 DARAJA ${newLevel}! 🏆`;
+            
+            document.body.appendChild(levelUpMessage);
+            
+            setTimeout(() => {
+                levelUpMessage.remove();
+            }, 2000);
+        }
 
         // Tangalarni yangilash
         function updateDisplay() {
@@ -264,6 +414,9 @@
             } else {
                 energyUpgrade.classList.remove('disabled');
             }
+
+            // Hamster rangini yangilash
+            updateHamsterColor();
         }
 
         // Klik effekti yaratish
@@ -294,7 +447,6 @@
                 createClickEffect(x, y, clickPower);
 
                 // Hamster animatsiyasi
-                const hamsterEmoji = document.getElementById('hamster-emoji');
                 hamsterEmoji.style.transform = 'scale(0.9)';
                 setTimeout(() => {
                     hamsterEmoji.style.transform = 'scale(1)';
@@ -343,7 +495,8 @@
                 clickLevel: clickLevel,
                 energyLevel: energyLevel,
                 clickUpgradeCost: clickUpgradeCost,
-                energyUpgradeCost: energyUpgradeCost
+                energyUpgradeCost: energyUpgradeCost,
+                lastLevel: lastLevel
             };
             localStorage.setItem('hamsterGame', JSON.stringify(gameData));
         }
@@ -361,6 +514,7 @@
                 energyLevel = gameData.energyLevel;
                 clickUpgradeCost = gameData.clickUpgradeCost;
                 energyUpgradeCost = gameData.energyUpgradeCost;
+                lastLevel = gameData.lastLevel || 1;
                 updateDisplay();
             }
         }
